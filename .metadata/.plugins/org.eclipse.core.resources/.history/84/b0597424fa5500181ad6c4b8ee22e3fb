@@ -1,0 +1,19 @@
+package com.homeaway.places.services;
+
+public class Strings {
+	final String apiKey = "AIzaSyAwphgQvEwLuwczfBNgsz2IQy91HHB4LDE";
+	String goolePlacesApiUri = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=%1s,%2s&radius=%3s&type=%4s&key=%5s";
+	String googlePlacesNextPageUri = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?pagetoken=%1s&key=%2s";
+
+	public String getApiKey() {
+		return apiKey;
+	}
+
+	public String getGoolePlacesApiUri() {
+		return goolePlacesApiUri;
+	}
+
+	public String getGooglePlacesNextPageUri() {
+		return googlePlacesNextPageUri;
+	}
+}

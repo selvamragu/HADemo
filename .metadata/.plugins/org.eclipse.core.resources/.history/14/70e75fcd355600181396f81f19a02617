@@ -1,0 +1,40 @@
+package com.homeaway.places.controllers;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.homeaway.places.entities.Response.Place;
+
+@RestController
+@RequestMapping("/places")
+public class Places {
+	
+	@GetMapping
+	public List<Place> GetPlaces(@RequestParam(value="placetypes",required = true) String[] placeTypes,
+			                     @RequestParam(value="geolocation",required = false) String geoLocation,
+	                             @RequestParam(value="radius",required=false) int radius)
+	{
+		List<Place> placesToReturn = new ArrayList<Place>();
+		 String dbURL = "jdbc:sqlserver://localhost;databaseName=HASample;integratedSecurity=true";
+		 try
+		 {
+		 Connection conn = DriverManager.getConnection(dbURL);
+		 if(conn != null)
+			 System.out.println("connection susccesful");
+		 }
+		 catch(Exception ex)
+		 {
+			 System.out.println("DB Exception :"+ex.getMessage().toString());
+		 }
+		 return placesToReturn;
+	}
+
+}
+

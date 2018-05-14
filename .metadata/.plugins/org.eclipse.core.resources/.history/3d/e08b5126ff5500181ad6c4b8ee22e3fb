@@ -1,0 +1,32 @@
+package com.homeaway.places.controllers;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.homeaway.places.entities.Request.GooglePlacesRequest;
+import com.homeaway.places.entities.Request.LatLong;
+import com.homeaway.places.entities.Response.GooglePlacesResponse;
+
+@RestController
+@RequestMapping("/googleplaces")
+public class GooglePlaces {
+
+	@PostMapping
+	public void GetPlacesFromGoogleApi(@RequestBody GooglePlacesRequest gpRequest) {
+		// String rad = gpRequest.GetRadiest)us();
+		
+	}
+
+}

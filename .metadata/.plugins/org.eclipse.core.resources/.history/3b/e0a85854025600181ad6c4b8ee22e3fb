@@ -1,0 +1,20 @@
+package com.homeaway.places.controllers;
+
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.homeaway.places.entities.Request.GooglePlacesRequest;
+
+@RestController
+@RequestMapping("/googleplaces")
+public class GooglePlaces {
+
+	@PostMapping
+	public void GetPlacesFromGoogleApi(@RequestBody GooglePlacesRequest gpRequest) {
+		// String rad = gpRequest.GetRadiest)us();
+
+	}
+
+}

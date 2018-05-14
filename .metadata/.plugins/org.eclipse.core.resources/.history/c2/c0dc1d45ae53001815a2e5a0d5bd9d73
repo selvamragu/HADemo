@@ -1,0 +1,11 @@
+package com.homeaway.places.entities.Request;
+
+import java.util.List;
+
+public class GooglePlacesRequest {
+	private int radius;
+	private List<LatLong> geoLocations;
+	private List<String> places;
+	private String dbName;
+	
+}

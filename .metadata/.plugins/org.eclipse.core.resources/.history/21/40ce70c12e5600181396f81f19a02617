@@ -1,0 +1,5 @@
+package com.homeaway.places.entities.Response;
+
+public class Place {
+
+}

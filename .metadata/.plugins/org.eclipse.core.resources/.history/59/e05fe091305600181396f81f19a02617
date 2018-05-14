@@ -1,0 +1,21 @@
+package com.homeaway.places.controllers;
+
+import java.util.List;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.homeaway.places.entities.Response.Place;
+
+@RestController
+@RequestMapping("/places")
+public class Places {
+	
+	@GetMapping
+	public List<Place> GetPlaces(@RequestParam(value="placetypes",required = true) String[] placeTypes)
+	{
+		
+	}
+
+}

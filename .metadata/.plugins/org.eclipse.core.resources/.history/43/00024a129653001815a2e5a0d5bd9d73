@@ -1,0 +1,5 @@
+package com.homeaway.places.entities.Request;
+
+public class GooglePlacesRequest {
+
+}

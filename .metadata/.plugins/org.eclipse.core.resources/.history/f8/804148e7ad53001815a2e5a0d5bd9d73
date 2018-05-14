@@ -1,0 +1,7 @@
+package com.homeaway.places.entities.Request;
+
+public class LatLong {
+	double latitude;
+	double longitute;
+	
+}
