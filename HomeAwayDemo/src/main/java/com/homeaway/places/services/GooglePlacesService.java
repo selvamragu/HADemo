@@ -15,44 +15,78 @@ import com.homeaway.places.entities.Request.GooglePlacesRequest;
 import com.homeaway.places.entities.Request.LatLong;
 import com.homeaway.places.entities.Response.GooglePlacesResponse;
 import com.homeaway.places.entities.Response.Result;
+import com.homeaway.places.services.Utils.Strings;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class GooglePlacesService {
 
 	@SuppressWarnings("rawtypes")
 	public ResponseEntity StorePlacesInDB(GooglePlacesRequest gpRequest) {
+		List<String> responseToReturn = new ArrayList<String>();
 		for (LatLong latLong : gpRequest.getlatLong()) {
+
+			if (latLong.getLatitude() < -90 || latLong.getLatitude() > 90 || latLong.getLongitude() < -180
+					|| latLong.getLongitude() > 180) {
+				responseToReturn
+						.add(String.format(
+								"Latitude : %1s, Lonitude : %2s is invalid. Latitude range : -90 to 90 "
+										+ "& Longitude range : -180 to 180",
+								latLong.getLatitude(), latLong.getLongitude()));
+				continue;
+			}
+
 			for (String place : gpRequest.getPlaces()) {
+
+				if (place == null || place.isEmpty()) {
+					responseToReturn.add("place type cannot be null or empty");
+					continue;
+				}
 
 				String requestUri = String.format(Strings.goolePlacesApiUri, latLong.getLatitude(),
 						latLong.getLongitude(), gpRequest.getRadius(), place, Strings.apiKey);
 				boolean nextPage = false;
 				boolean invalidStatus = false;
 				boolean firstPage = true;
+				int pageNum = 0;
 
 				do {
 					try {
 						GooglePlacesResponse gpRes = GetPlacesFromGoogleApi(requestUri);
-						invalidStatus = gpRes.getStatus().trim().equals("INVALID_REQUEST");
+
+						if (gpRes == null) {
+							responseToReturn.add(String.format(Strings.responseString, "null response",
+									latLong.getLatitude(), latLong.getLongitude(), place));
+							continue;
+						}
+
+						String googleResponseStatus = gpRes.getStatus().trim();
+
+						if (googleResponseStatus.equals("ZERO_RESULTS")) {
+							responseToReturn.add(String.format(Strings.responseString, "zero results",
+									latLong.getLatitude(), latLong.getLongitude(), place));
+							continue;
+						}
+
+						invalidStatus = googleResponseStatus.equals("INVALID_REQUEST");
+
+						if (invalidStatus && firstPage) {
+							responseToReturn.add(String.format(Strings.responseString, "invalid request",
+									latLong.getLatitude(), latLong.getLongitude(), place));
+							continue;
+						}
+						
 						if (!invalidStatus) {
-							String selectQuery = String.format(Strings.selectPlaceType, place);
-							String insertQuery = String.format(Strings.insertPlaceType, place);
-							int placeTypeId = InsertIfNotPresent(selectQuery, insertQuery);
-
-							selectQuery = String.format(Strings.selectSearchTerm, latLong.getLatitude(),
-									latLong.getLongitude(), gpRequest.getRadius());
-							insertQuery = String.format(Strings.insertSearchTerm, latLong.getLatitude(),
-									latLong.getLongitude(), gpRequest.getRadius());
-							int searchTermId = InsertIfNotPresent(selectQuery, insertQuery);
-
+							int placeTypeId = InsertPlaceType(place);
+							int searchTermId = InsertSearchTerm(latLong, gpRequest.getRadius());
 							for (Result result : gpRes.getResults()) {
-								selectQuery = String.format(Strings.selectPlace, searchTermId, result.getName(),
-										placeTypeId);
-								insertQuery = String.format(Strings.insertPlace, searchTermId, result.getName(),
-										placeTypeId);
-								InsertIfNotPresent(selectQuery, insertQuery);
+								InsertPlace(searchTermId, placeTypeId, result.getName().contains("'") 
+										? result.getName().replaceAll("'", "''") : result.getName());
 							}
+							responseToReturn.add(String.format(Strings.responseStringWithPageNum, "records", latLong.getLatitude(),
+									latLong.getLongitude(), place,++pageNum));
 						} else if (invalidStatus && !firstPage)
 							Thread.sleep(500); // it take few seconds for the
 												// next page token to become
@@ -66,12 +100,32 @@ public class GooglePlacesService {
 									Strings.apiKey);
 						}
 					} catch (Exception ex) {
-						System.out.println("Exception : " + ex.getMessage().toString());
+						System.out.println("Exception in StorePlacesInDB: " + ex.getMessage().toString());
 					}
 				} while (nextPage || (invalidStatus && !firstPage));
 			}
 		}
-		return ResponseEntity.status(HttpStatus.CREATED).body("Places inserted into db");
+		return ResponseEntity.status(HttpStatus.CREATED).body(responseToReturn);
+	}
+
+	private int InsertPlaceType(String place) {
+		String selectQuery = String.format(Strings.selectPlaceType, place);
+		String insertQuery = String.format(Strings.insertPlaceType, place);
+		return InsertIfNotPresent(selectQuery, insertQuery);
+	}
+
+	private int InsertSearchTerm(LatLong latLong, int radius) {
+		String selectQuery = String.format(Strings.selectSearchTerm, latLong.getLatitude(), latLong.getLongitude(),
+				radius);
+		String insertQuery = String.format(Strings.insertSearchTerm, latLong.getLatitude(), latLong.getLongitude(),
+				radius);
+		return InsertIfNotPresent(selectQuery, insertQuery);
+	}
+
+	private int InsertPlace(int searchTermId, int placeTypeId, String place) {
+		String selectQuery = String.format(Strings.selectPlace, searchTermId, place, placeTypeId);
+		String insertQuery = String.format(Strings.insertPlace, searchTermId, place, placeTypeId);
+		return InsertIfNotPresent(selectQuery, insertQuery);
 	}
 
 	private GooglePlacesResponse GetPlacesFromGoogleApi(String requestUri) {
@@ -90,43 +144,49 @@ public class GooglePlacesService {
 			ObjectMapper objectMapper = new ObjectMapper();
 			return objectMapper.readValue(result.toString(), GooglePlacesResponse.class);
 		} catch (Exception ex) {
-			System.out.println("Exception : " + ex.getMessage());
+			System.out.println("Exception in GetPlacesFromGoogleApi: " + ex.getMessage());
 			return null;
 		}
 	}
 
 	private int InsertIfNotPresent(String selectQuery, String insertQuery) {
 		int idToReturn = 0;
+		Connection con = null;
 		try {
-			Connection con = DriverManager.getConnection(Strings.connectionString);
+			con = DriverManager.getConnection(Strings.connectionString);
 			PreparedStatement st = con.prepareStatement(selectQuery);
 			ResultSet rs = st.executeQuery();
-			if (rs.next())
+			if (rs != null && rs.next())
 				idToReturn = rs.getInt(1);
 			else {
 				Statement stmt = con.createStatement();
 				int count = stmt.executeUpdate(insertQuery, Statement.RETURN_GENERATED_KEYS);
 				if (count > 0) {
 					rs = stmt.getGeneratedKeys();
-
 					ResultSetMetaData rsmd = rs.getMetaData();
 					int columnCount = rsmd.getColumnCount();
-					if (rs.next()) {
+					if (rs != null && rs.next()) {
 						do {
 							for (int i = 1; i <= columnCount; i++) {
 								idToReturn = rs.getInt(i);
 							}
 						} while (rs.next());
-					} else {
-						System.out.println("NO KEYS WERE GENERATED.");
-					}
+					} 
 					rs.close();
 					stmt.close();
 				}
 			}
-			con.close();
 		} catch (Exception ex) {
-			System.out.println("Exception :" + ex.getMessage().toString());
+			System.out.println("Exception  in InsertIfNotPresent :" + ex.getMessage().toString());
+		} finally {
+			if (con != null) {
+				try {
+					con.close();
+				} catch (SQLException ex) {
+					System.out.println("Exception" + ex.getMessage().toString());
+					idToReturn = -1;
+				}
+			}
 		}
 		return idToReturn;
 	}

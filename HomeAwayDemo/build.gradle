@@ -30,4 +30,6 @@ dependencies {
     testCompile('org.springframework.boot:spring-boot-starter-test')
     compile ('org.apache.httpcomponents:httpclient:4.5.5')
      compile ("com.microsoft.sqlserver:mssql-jdbc:6.4.0.jre8")
+     testCompile "junit:junit:4.11"
+    testCompile "org.mockito:mockito-core:1.+"
 }
