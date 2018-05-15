@@ -19,6 +19,8 @@ public class GooglePlaces {
 	public ResponseEntity GetPlacesFromGoogleApi(@RequestBody GooglePlacesRequest gpRequest) {
 		if(gpRequest.getRadius() <= 0)
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Radius should be > zero");
+		if(!gpRequest.getDbName().equals("HASample"))
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("DB Name should be : HASample");
 		return new GooglePlacesService().StorePlacesInDB(gpRequest);
 	}
 }
